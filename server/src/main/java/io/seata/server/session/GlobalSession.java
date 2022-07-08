@@ -189,9 +189,11 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
 
     @Override
     public void begin() throws TransactionException {
+        //设置状态为开启
         this.status = GlobalStatus.Begin;
         this.beginTime = System.currentTimeMillis();
         this.active = true;
+        //遍历session周期监听器，进行开启事务，
         for (SessionLifecycleListener lifecycleListener : lifecycleListeners) {
             lifecycleListener.onBegin(this);
         }
@@ -292,9 +294,11 @@ public class GlobalSession implements SessionLifecycle, SessionStorable {
 
     @Override
     public void addBranch(BranchSession branchSession) throws TransactionException {
+        //將分支session保存起來
         for (SessionLifecycleListener lifecycleListener : lifecycleListeners) {
             lifecycleListener.onAddBranch(this, branchSession);
         }
+        //设置分支session并将分支session保存到缓存中
         branchSession.setStatus(BranchStatus.Registered);
         add(branchSession);
     }

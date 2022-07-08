@@ -84,6 +84,7 @@ public class DefaultSagaTransactionalTemplate
         GlobalTransaction tx = GlobalTransactionContext.getCurrentOrCreate();
         try {
             triggerBeforeBegin();
+            //TM对TC（Seata-Server）发起请求
             tx.begin(txInfo.getTimeOut(), txInfo.getName());
             triggerAfterBegin();
         } catch (TransactionException txe) {

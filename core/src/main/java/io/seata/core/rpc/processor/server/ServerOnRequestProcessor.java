@@ -140,6 +140,7 @@ public class ServerOnRequestProcessor implements RemotingProcessor, Disposable {
 
     private void onRequestMessage(ChannelHandlerContext ctx, RpcMessage rpcMessage) {
         Object message = rpcMessage.getBody();
+        //获取rpc上下文
         RpcContext rpcContext = ChannelManager.getContextFromIdentified(ctx.channel());
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("server received:{},clientIp:{},vgroup:{}", message,
@@ -153,16 +154,19 @@ public class ServerOnRequestProcessor implements RemotingProcessor, Disposable {
                 LOGGER.error("put message to logQueue error: {}", e.getMessage(), e);
             }
         }
+        //如果消息不是继承了AbstractMessage，直接返回
         if (!(message instanceof AbstractMessage)) {
             return;
         }
         // the batch send request message
+        //如果是批量消息，则一条一条消息处理
         if (message instanceof MergedWarpMessage) {
             if (NettyServerConfig.isEnableTcServerBatchSendResponse() &&
                 StringUtils.isNotBlank(rpcContext.getVersion()) && Version.isAboveOrEqualVersion150(rpcContext.getVersion())) {
                 List<AbstractMessage> msgs = ((MergedWarpMessage) message).msgs;
                 List<Integer> msgIds = ((MergedWarpMessage) message).msgIds;
                 for (int i = 0; i < msgs.size(); i++) {
+                    //事务消息处理
                     AbstractResultMessage resultMessage = transactionMessageHandler.onRequest(msgs.get(i), rpcContext);
                     BlockingQueue<QueueItem> msgQueue = computeIfAbsentMsgQueue(ctx.channel());
                     offerMsg(msgQueue, rpcMessage, resultMessage, msgIds.get(i), ctx.channel());
@@ -172,15 +176,19 @@ public class ServerOnRequestProcessor implements RemotingProcessor, Disposable {
                 AbstractResultMessage[] results = new AbstractResultMessage[((MergedWarpMessage) message).msgs.size()];
                 for (int i = 0; i < results.length; i++) {
                     final AbstractMessage subMessage = ((MergedWarpMessage) message).msgs.get(i);
+                    //事务消息处理
                     results[i] = transactionMessageHandler.onRequest(subMessage, rpcContext);
                 }
                 MergeResultMessage resultMessage = new MergeResultMessage();
                 resultMessage.setMsgs(results);
+                //将处理结果反馈给客户端
                 remotingServer.sendAsyncResponse(rpcMessage, ctx.channel(), resultMessage);
             }
         } else {
             // the single send request message
-            final AbstractMessage msg = (AbstractMessage) message;
+            //单条消息处理
+            final AbstractMessage msg = (AbstractMessage) message;//事务消息处理
+
             AbstractResultMessage result = transactionMessageHandler.onRequest(msg, rpcContext);
             remotingServer.sendAsyncResponse(rpcMessage, ctx.channel(), result);
         }

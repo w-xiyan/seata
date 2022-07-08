@@ -233,6 +233,7 @@ public class DefaultCoordinator extends AbstractTCInboundHandler implements Tran
     @Override
     protected void doGlobalBegin(GlobalBeginRequest request, GlobalBeginResponse response, RpcContext rpcContext)
             throws TransactionException {
+        //处理事务开始，并设置xid
         response.setXid(core.begin(rpcContext.getApplicationId(), rpcContext.getTransactionServiceGroup(),
                 request.getTransactionName(), request.getTimeout()));
         if (LOGGER.isInfoEnabled()) {
@@ -502,12 +503,14 @@ public class DefaultCoordinator extends AbstractTCInboundHandler implements Tran
 
     @Override
     public AbstractResultMessage onRequest(AbstractMessage request, RpcContext context) {
+        //如果是AbstractTransactionRequestToTC子类，抛出异常
         if (!(request instanceof AbstractTransactionRequestToTC)) {
             throw new IllegalArgumentException();
         }
         AbstractTransactionRequestToTC transactionRequest = (AbstractTransactionRequestToTC) request;
+        //设置事务处理器
         transactionRequest.setTCInboundHandler(this);
-
+        //委托给transactionRequest处理
         return transactionRequest.handle(context);
     }
 

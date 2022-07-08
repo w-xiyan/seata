@@ -73,17 +73,25 @@ public abstract class AbstractCore implements Core {
     @Override
     public Long branchRegister(BranchType branchType, String resourceId, String clientId, String xid,
                                String applicationData, String lockKeys) throws TransactionException {
+        //根据xid获取全局事务，这个全局事务是在事务开始阶段提交的
         GlobalSession globalSession = assertGlobalSessionNotNull(xid, false);
+        //在获取锁的请求下执行分支注册
         return SessionHolder.lockAndExecute(globalSession, () -> {
+            //全局事务状态检查
             globalSessionStatusCheck(globalSession);
+            //添加全局事务生命周期监听器
             globalSession.addSessionLifecycleListener(SessionHolder.getRootSessionManager());
+            //创建分支session
             BranchSession branchSession = SessionHelper.newBranchByGlobal(globalSession, branchType, resourceId,
                     applicationData, lockKeys, clientId);
             MDC.put(RootContext.MDC_KEY_BRANCH_ID, String.valueOf(branchSession.getBranchId()));
+            //分支锁开启
             branchSessionLock(globalSession, branchSession);
             try {
+                //添加分支session
                 globalSession.addBranch(branchSession);
             } catch (RuntimeException ex) {
+                //释放锁
                 branchSessionUnlock(branchSession);
                 throw new BranchTransactionException(FailedToAddBranch, String
                         .format("Failed to store branch xid = %s branchId = %s", globalSession.getXid(),
@@ -156,12 +164,14 @@ public abstract class AbstractCore implements Core {
     @Override
     public BranchStatus branchCommit(GlobalSession globalSession, BranchSession branchSession) throws TransactionException {
         try {
+            //创建分支提交请求
             BranchCommitRequest request = new BranchCommitRequest();
             request.setXid(branchSession.getXid());
             request.setBranchId(branchSession.getBranchId());
             request.setResourceId(branchSession.getResourceId());
             request.setApplicationData(branchSession.getApplicationData());
             request.setBranchType(branchSession.getBranchType());
+            //向RM发送分支提交请求
             return branchCommitSend(request, globalSession, branchSession);
         } catch (IOException | TimeoutException e) {
             throw new BranchTransactionException(FailedToSendBranchCommitRequest,
@@ -180,12 +190,14 @@ public abstract class AbstractCore implements Core {
     @Override
     public BranchStatus branchRollback(GlobalSession globalSession, BranchSession branchSession) throws TransactionException {
         try {
+            //创建分支回滚请求
             BranchRollbackRequest request = new BranchRollbackRequest();
             request.setXid(branchSession.getXid());
             request.setBranchId(branchSession.getBranchId());
             request.setResourceId(branchSession.getResourceId());
             request.setApplicationData(branchSession.getApplicationData());
             request.setBranchType(branchSession.getBranchType());
+            //向RM发送分支回滚请求
             return branchRollbackSend(request, globalSession, branchSession);
         } catch (IOException | TimeoutException e) {
             throw new BranchTransactionException(FailedToSendBranchRollbackRequest,

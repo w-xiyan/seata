@@ -128,7 +128,9 @@ public abstract class AbstractExceptionHandler {
      */
     public <T extends AbstractTransactionRequest, S extends AbstractTransactionResponse> void exceptionHandleTemplate(Callback<T, S> callback, T request, S response) {
         try {
+            //回调方法执行
             callback.execute(request, response);
+            //回调方法执行成功
             callback.onSuccess(request, response);
         } catch (TransactionException tex) {
             if (Objects.equals(LockKeyConflict, tex.getCode())) {
@@ -140,9 +142,11 @@ public abstract class AbstractExceptionHandler {
             } else {
                 LOGGER.error("Catch TransactionException while do RPC, request: {}", request, tex);
             }
+            //回调方法执行发生事务异常
             callback.onTransactionException(request, response, tex);
         } catch (RuntimeException rex) {
             LOGGER.error("Catch RuntimeException while do RPC, request: {}", request, rex);
+            //回调方法执行发生事务异常
             callback.onException(request, response, rex);
         }
     }

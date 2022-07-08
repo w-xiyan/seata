@@ -47,11 +47,14 @@ public class TCCBeanParserUtils {
      * @return boolean boolean
      */
     public static boolean isTccAutoProxy(Object bean, String beanName, ApplicationContext applicationContext) {
+        //解析服务对象的信息
         boolean isRemotingBean = parserRemotingServiceInfo(bean, beanName);
         //get RemotingBean description
+        //服务的信息
         RemotingDesc remotingDesc = DefaultRemotingParser.get().getRemotingBeanDesc(beanName);
         //is remoting bean
         if (isRemotingBean) {
+            //本地对象，JVM
             if (remotingDesc != null && remotingDesc.getProtocol() == Protocols.IN_JVM) {
                 //LocalTCC
                 return isTccProxyTargetBean(remotingDesc);
@@ -174,8 +177,10 @@ public class TCCBeanParserUtils {
      * @return if sofa:service, sofa:reference, dubbo:reference, dubbo:service return true, else return false
      */
     protected static boolean parserRemotingServiceInfo(Object bean, String beanName) {
+        //Remoting bean 回旋
         RemotingParser remotingParser = DefaultRemotingParser.get().isRemoting(bean, beanName);
         if (remotingParser != null) {
+            //进行解析Remoting bean
             return DefaultRemotingParser.get().parserRemotingServiceInfo(bean, beanName, remotingParser) != null;
         }
         return false;

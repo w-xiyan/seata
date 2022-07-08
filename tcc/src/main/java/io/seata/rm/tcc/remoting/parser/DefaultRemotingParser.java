@@ -77,6 +77,7 @@ public class DefaultRemotingParser {
      */
     protected void initRemotingParser() {
         //init all resource managers
+        //spi加载所有RemotingParser
         List<RemotingParser> remotingParsers = EnhancedServiceLoader.loadAll(RemotingParser.class);
         if (CollectionUtils.isNotEmpty(remotingParsers)) {
             allRemotingParsers.addAll(remotingParsers);
@@ -91,6 +92,7 @@ public class DefaultRemotingParser {
      * @return boolean boolean
      */
     public RemotingParser isRemoting(Object bean, String beanName) {
+        //通过beam和beanName获取RemotingParser
         for (RemotingParser remotingParser : allRemotingParsers) {
             if (remotingParser.isRemoting(bean, beanName)) {
                 return remotingParser;
