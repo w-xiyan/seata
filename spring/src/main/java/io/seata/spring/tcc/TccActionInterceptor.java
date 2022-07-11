@@ -83,33 +83,42 @@ public class TccActionInterceptor implements MethodInterceptor, ConfigurationCha
             //not in transaction, or this interceptor is disabled
             return invocation.proceed();
         }
+        //获取方法的注解@TwoPhaseBusinessAction
         Method method = getActionInterfaceMethod(invocation);
         TwoPhaseBusinessAction businessAction = method.getAnnotation(TwoPhaseBusinessAction.class);
         //try method
+        //如果@TwoPhaseBusinessAction不等于null
         if (businessAction != null) {
             //save the xid
             String xid = RootContext.getXID();
             //save the previous branchType
+            //保存前面的分支类型
             BranchType previousBranchType = RootContext.getBranchType();
             //if not TCC, bind TCC branchType
+            //如果前面的分支类型不是TCC，设置上下文绑定的分支类型为TCC
             if (BranchType.TCC != previousBranchType) {
                 RootContext.bindBranchType(BranchType.TCC);
             }
             try {
                 //Handler the TCC Aspect, and return the business result
+                //获取被@TwoPhaseBusinessAction修饰的方法的参数
+                //交给actionInterceptorHandler处理方法
                 return actionInterceptorHandler.proceed(method, invocation.getArguments(), xid, businessAction,
                         invocation::proceed);
             } finally {
                 //if not TCC, unbind branchType
+                //如果不是TCC，则解绑绑定的分支类型
                 if (BranchType.TCC != previousBranchType) {
                     RootContext.unbindBranchType();
                 }
                 //MDC remove branchId
+                //一个线程安全的存放诊断日志的容器，根据key移除容器里的值
                 MDC.remove(RootContext.MDC_KEY_BRANCH_ID);
             }
         }
 
         //not TCC try method
+        //不是被@TwoPhaseBusinessAction修饰的方法执行
         return invocation.proceed();
     }
 

@@ -57,6 +57,7 @@ public abstract class AbstractResourceManager implements ResourceManager {
     @Override
     public Long branchRegister(BranchType branchType, String resourceId, String clientId, String xid, String applicationData, String lockKeys) throws TransactionException {
         try {
+            //构建分支注册的请求
             BranchRegisterRequest request = new BranchRegisterRequest();
             request.setXid(xid);
             request.setLockKey(lockKeys);
@@ -64,6 +65,7 @@ public abstract class AbstractResourceManager implements ResourceManager {
             request.setBranchType(branchType);
             request.setApplicationData(applicationData);
 
+            //向TC进行分支注册
             BranchRegisterResponse response = (BranchRegisterResponse) RmNettyRemotingClient.getInstance().sendSyncRequest(request);
             if (response.getResultCode() == ResultCode.Failed) {
                 throw new RmTransactionException(response.getTransactionExceptionCode(), String.format("Response[ %s ]", response.getMsg()));

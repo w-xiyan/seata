@@ -467,17 +467,21 @@ public class GlobalTransactionScanner extends AbstractAutoProxyCreator
                 if (clazz == null) {
                     continue;
                 }
+                //类是否被@GlobalTransactional注解修饰
                 GlobalTransactional trxAnno = clazz.getAnnotation(GlobalTransactional.class);
                 if (trxAnno != null) {
                     return true;
                 }
+                //遍历方法
                 Method[] methods = clazz.getMethods();
                 for (Method method : methods) {
+                    //方法是否被@GlobalTransactional注解修饰
                     trxAnno = method.getAnnotation(GlobalTransactional.class);
                     if (trxAnno != null) {
                         return true;
                     }
 
+                    //方法是否被@GlobalLock注解修饰
                     GlobalLock lockAnno = method.getAnnotation(GlobalLock.class);
                     if (lockAnno != null) {
                         return true;

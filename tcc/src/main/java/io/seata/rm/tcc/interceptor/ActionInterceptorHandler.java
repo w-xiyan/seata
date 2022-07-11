@@ -65,6 +65,7 @@ public class ActionInterceptorHandler {
     public Object proceed(Method method, Object[] arguments, String xid, TwoPhaseBusinessAction businessAction,
                                        Callback<Object> targetCallback) throws Throwable {
         //Get action context from arguments, or create a new one and then reset to arguments
+        //从参数中获取动作上下文，或者创建一个新的，然后重置为参数
         BusinessActionContext actionContext = getOrCreateActionContextAndResetToArguments(method.getParameterTypes(), arguments);
 
         //Set the xid
@@ -76,6 +77,7 @@ public class ActionInterceptorHandler {
         actionContext.setDelayReport(businessAction.isDelayReport());
 
         //Creating Branch Record
+        //创建分支记录，向TC注册分支
         String branchId = doTccActionLogStore(method, arguments, businessAction, actionContext);
         actionContext.setBranchId(branchId);
         //MDC put branchId
@@ -100,11 +102,13 @@ public class ActionInterceptorHandler {
                 }
             } else {
                 //Execute business, and return the business result
+                //执行业务，返回业务结果
                 return targetCallback.execute();
             }
         } finally {
             try {
                 //to report business action context finally if the actionContext.getUpdated() is true
+                //如果 actionContext.getUpdated() 为真，则最终报告业务操作上下文
                 BusinessActionContextUtil.reportContext(actionContext);
             } finally {
                 if (previousActionContext != null) {
@@ -169,13 +173,15 @@ public class ActionInterceptorHandler {
         String xid = actionContext.getXid();
 
         //region fetch context and init action context
-
+        //获取被@BusinessActionContextParameter修饰的参数
         Map<String, Object> context = fetchActionRequestContext(method, arguments);
         context.put(Constants.ACTION_START_TIME, System.currentTimeMillis());
 
         //Init business context
+        //初始化业务上下文参数
         initBusinessContext(context, method, businessAction);
         //Init running environment context
+        //初始化运行参数
         initFrameworkContext(context);
 
         Map<String, Object> originContext = actionContext.getActionContext();
@@ -191,10 +197,12 @@ public class ActionInterceptorHandler {
         //endregion
 
         //Init applicationData
+        //初始化应用参数
         Map<String, Object> applicationContext = Collections.singletonMap(Constants.TCC_ACTION_CONTEXT, context);
         String applicationContextStr = JSON.toJSONString(applicationContext);
         try {
             //registry branch record
+            //初始化应用参数
             Long branchId = DefaultResourceManager.get().branchRegister(BranchType.TCC, actionName, null, xid,
                     applicationContextStr, null);
             return String.valueOf(branchId);

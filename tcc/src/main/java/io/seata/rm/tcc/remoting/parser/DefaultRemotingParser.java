@@ -166,6 +166,7 @@ public class DefaultRemotingParser {
      * @return remoting desc
      */
     public RemotingDesc parserRemotingServiceInfo(Object bean, String beanName, RemotingParser remotingParser) {
+        //Remoting 定义
         RemotingDesc remotingBeanDesc = remotingParser.getServiceDesc(bean, beanName);
         if (remotingBeanDesc == null) {
             return null;
@@ -174,21 +175,28 @@ public class DefaultRemotingParser {
 
         Class<?> interfaceClass = remotingBeanDesc.getInterfaceClass();
         Method[] methods = interfaceClass.getMethods();
+        //如果是一个服务发起方
         if (remotingParser.isService(bean, beanName)) {
             try {
                 //service bean, registry resource
                 Object targetBean = remotingBeanDesc.getTargetBean();
+                //遍历所有的方法
                 for (Method m : methods) {
                     TwoPhaseBusinessAction twoPhaseBusinessAction = m.getAnnotation(TwoPhaseBusinessAction.class);
+                    //如果方法有@TwoPhaseBusinessAction注解，那么创建TCCResource，并将其进行注册
                     if (twoPhaseBusinessAction != null) {
                         TCCResource tccResource = new TCCResource();
                         tccResource.setActionName(twoPhaseBusinessAction.name());
                         tccResource.setTargetBean(targetBean);
                         tccResource.setPrepareMethod(m);
+                        //提交方法名字
                         tccResource.setCommitMethodName(twoPhaseBusinessAction.commitMethod());
+                        //提交方法
                         tccResource.setCommitMethod(interfaceClass.getMethod(twoPhaseBusinessAction.commitMethod(),
                                 twoPhaseBusinessAction.commitArgsClasses()));
+                        //回滚方法名字
                         tccResource.setRollbackMethodName(twoPhaseBusinessAction.rollbackMethod());
+                        //回滚方法
                         tccResource.setRollbackMethod(interfaceClass.getMethod(twoPhaseBusinessAction.rollbackMethod(),
                                 twoPhaseBusinessAction.rollbackArgsClasses()));
                         // set argsClasses
@@ -200,6 +208,7 @@ public class DefaultRemotingParser {
                         tccResource.setPhaseTwoRollbackKeys(this.getTwoPhaseArgs(tccResource.getRollbackMethod(),
                                 twoPhaseBusinessAction.rollbackArgsClasses()));
                         //registry tcc resource
+                        //注册TCC 资源
                         DefaultResourceManager.get().registerResource(tccResource);
                     }
                 }
