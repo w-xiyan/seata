@@ -84,19 +84,24 @@ public class TCCResourceManager extends AbstractResourceManager {
     @Override
     public BranchStatus branchCommit(BranchType branchType, String xid, long branchId, String resourceId,
                                      String applicationData) throws TransactionException {
+        //获取注册的资源
         TCCResource tccResource = (TCCResource)tccResourceCache.get(resourceId);
         if (tccResource == null) {
             throw new ShouldNeverHappenException(String.format("TCC resource is not exist, resourceId: %s", resourceId));
         }
+        //获取提交方法
         Object targetTCCBean = tccResource.getTargetBean();
         Method commitMethod = tccResource.getCommitMethod();
+        //如果资源或提交方法为空，则抛出异常
         if (targetTCCBean == null || commitMethod == null) {
             throw new ShouldNeverHappenException(String.format("TCC resource is not available, resourceId: %s", resourceId));
         }
         try {
             //BusinessActionContext
+            //业务上下文
             BusinessActionContext businessActionContext = getBusinessActionContext(xid, branchId, resourceId,
                 applicationData);
+            //执行提交方法：即本地的业务方法
             Object[] args = this.getTwoPhaseCommitArgs(tccResource, businessActionContext);
             Object ret;
             boolean result;
@@ -120,6 +125,7 @@ public class TCCResourceManager extends AbstractResourceManager {
                 }
             }
             LOGGER.info("TCC resource commit result : {}, xid: {}, branchId: {}, resourceId: {}", result, xid, branchId, resourceId);
+            //返回分支提交结果
             return result ? BranchStatus.PhaseTwo_Committed : BranchStatus.PhaseTwo_CommitFailed_Retryable;
         } catch (Throwable t) {
             String msg = String.format("commit TCC resource error, resourceId: %s, xid: %s.", resourceId, xid);
