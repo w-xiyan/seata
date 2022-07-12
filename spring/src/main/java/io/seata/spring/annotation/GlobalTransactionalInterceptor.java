@@ -199,9 +199,11 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
         final AspectTransactional aspectTransactional) throws Throwable {
         boolean succeed = true;
         try {
+            //transactionalTemplate是事务模板类，执行事务
             return transactionalTemplate.execute(new TransactionalExecutor() {
                 @Override
                 public Object execute() throws Throwable {
+                    //被@GlobalTransactional拦截的方法的执行
                     return methodInvocation.proceed();
                 }
 
@@ -210,23 +212,30 @@ public class GlobalTransactionalInterceptor implements ConfigurationChangeListen
                     if (!StringUtils.isNullOrEmpty(name)) {
                         return name;
                     }
+                    //方法的完整名字：方法名字(参数一，参数二...)
                     return formatMethod(methodInvocation.getMethod());
                 }
 
                 @Override
+                //事务相关信息
                 public TransactionInfo getTransactionInfo() {
                     // reset the value of timeout
+                    //超时时间
                     int timeout = aspectTransactional.getTimeoutMills();
                     if (timeout <= 0 || timeout == DEFAULT_GLOBAL_TRANSACTION_TIMEOUT) {
                         timeout = defaultGlobalTransactionTimeout;
                     }
-
+                    //事务信息，设置事务信息相关属性
                     TransactionInfo transactionInfo = new TransactionInfo();
                     transactionInfo.setTimeOut(timeout);
                     transactionInfo.setName(name());
+                    //事务传播机制
                     transactionInfo.setPropagation(aspectTransactional.getPropagation());
+                    //锁的重试间隔
                     transactionInfo.setLockRetryInterval(aspectTransactional.getLockRetryInterval());
+                    //锁的重试次数
                     transactionInfo.setLockRetryTimes(aspectTransactional.getLockRetryTimes());
+                    //回滚规则
                     Set<RollbackRule> rollbackRules = new LinkedHashSet<>();
                     for (Class<?> rbRule : aspectTransactional.getRollbackFor()) {
                         rollbackRules.add(new RollbackRule(rbRule));

@@ -67,6 +67,7 @@ public class DefaultResourceManager implements ResourceManager {
 
     protected void initResourceManagers() {
         //init all resource managers
+        //SPI加载所有的ResourceManager子类
         List<ResourceManager> allResourceManagers = EnhancedServiceLoader.loadAll(ResourceManager.class);
         if (CollectionUtils.isNotEmpty(allResourceManagers)) {
             for (ResourceManager rm : allResourceManagers) {

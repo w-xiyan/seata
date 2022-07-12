@@ -110,6 +110,7 @@ public class TCCBeanParserUtils {
      * @param remotingDesc the remoting desc
      * @return boolean boolean
      */
+    //方法判断是否是TCC代理bean，如果是的话创建TccActionInterceptor拦截器
     public static boolean isTccProxyTargetBean(RemotingDesc remotingDesc) {
         if (remotingDesc == null) {
             return false;

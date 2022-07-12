@@ -48,12 +48,14 @@ public class TransactionalTemplate {
      * @throws TransactionalExecutor.ExecutionException the execution exception
      */
     public Object execute(TransactionalExecutor business) throws Throwable {
+        //获取事务信息
         // 1. Get transactionInfo
         TransactionInfo txInfo = business.getTransactionInfo();
         if (txInfo == null) {
             throw new ShouldNeverHappenException("transactionInfo does not exist");
         }
         // 1.1 Get current transaction, if not null, the tx role is 'GlobalTransactionRole.Participant'.
+        //获取当前事务
         GlobalTransaction tx = GlobalTransactionContext.getCurrent();
 
         // 1.2 Handle the transaction propagation.
@@ -61,12 +63,15 @@ public class TransactionalTemplate {
         SuspendedResourcesHolder suspendedResourcesHolder = null;
         try {
             switch (propagation) {
+                //处理事务传播机制
                 case NOT_SUPPORTED:
                     // If transaction is existing, suspend it.
+                    //如果事务存在，则暂停它
                     if (existingTransaction(tx)) {
                         suspendedResourcesHolder = tx.suspend();
                     }
                     // Execute without transaction and return.
+                    //无事务执行并返回
                     return business.execute();
                 case REQUIRES_NEW:
                     // If transaction is existing, suspend it, and then begin new transaction.
@@ -75,9 +80,11 @@ public class TransactionalTemplate {
                         tx = GlobalTransactionContext.createNew();
                     }
                     // Continue and execute with new transaction
+                    //继续执行新事务
                     break;
                 case SUPPORTS:
                     // If transaction is not existing, execute without transaction.
+                    //如果事务不存在，则在没有事务的情况下执行。
                     if (notExistingTransaction(tx)) {
                         return business.execute();
                     }
@@ -119,19 +126,23 @@ public class TransactionalTemplate {
             try {
                 // 2. If the tx role is 'GlobalTransactionRole.Launcher', send the request of beginTransaction to TC,
                 //    else do nothing. Of course, the hooks will still be triggered.
+                //开始事务
                 beginTransaction(txInfo, tx);
 
                 Object rs;
                 try {
                     // Do Your Business
+                    //执行业务
                     rs = business.execute();
                 } catch (Throwable ex) {
                     // 3. The needed business exception to rollback.
+                    //发生异常，则进行回滚
                     completeTransactionAfterThrowing(txInfo, tx, ex);
                     throw ex;
                 }
 
                 // 4. everything is fine, commit.
+                //提交事务
                 commitTransaction(tx);
 
                 return rs;
